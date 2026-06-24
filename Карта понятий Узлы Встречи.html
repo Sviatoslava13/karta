@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Карта понятий — Узлы Встречи</title>
+<style>
+  :root{
+    --bg:#f4f1ea; --ink:#1f1c17; --muted:#6b6457;
+    --core:#7a3b2e;        /* центр — терракота */
+    --fold:#3b5a6b;        /* складки — сине-серый */
+    --epoch:#5a6b3b;       /* эпохи — оливковый */
+    --ladder:#6b4a7a;      /* лестница — фиолетовый */
+    --doc:#8a7a55;         /* документы — охра */
+    --card:#fbf9f4; --line:#cbc3b3;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:Georgia,'Times New Roman',serif;line-height:1.5;}
+  header{padding:22px 28px 10px;border-bottom:1px solid var(--line);}
+  h1{margin:0;font-size:25px;letter-spacing:.3px;}
+  .sub{color:var(--muted);font-style:italic;font-size:15px;margin-top:4px;}
+  .tabs{display:flex;gap:10px;flex-wrap:wrap;padding:14px 28px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:20;}
+  .tab{cursor:pointer;border:1.5px solid var(--line);background:var(--card);
+    padding:9px 16px;border-radius:22px;font-size:14.5px;color:var(--ink);transition:.15s;user-select:none;}
+  .tab:hover{border-color:var(--muted);}
+  .tab.active{color:#fff;border-color:transparent;}
+  .tab.t1.active{background:var(--core);}
+  .tab.t2.active{background:var(--epoch);}
+  .tab.t3.active{background:var(--ladder);}
+  .legend{font-size:12.5px;color:var(--muted);padding:8px 28px 0;}
+  main{padding:18px 22px 60px;max-width:1180px;margin:0 auto;}
+  .view{display:none;animation:fade .25s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  /* центр-вид */
+  .core-band{display:flex;justify-content:center;margin:18px 0 26px;}
+  .core{background:var(--core);color:#fff;padding:18px 30px;border-radius:14px;text-align:center;max-width:560px;box-shadow:0 4px 14px rgba(122,59,46,.25);}
+  .core .t{font-size:21px;font-weight:bold;}
+  .core .s{font-size:13.5px;font-style:italic;opacity:.9;margin-top:5px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px;}
+  .node{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;border-left:5px solid var(--fold);}
+  .node h3{margin:0 0 3px;font-size:17.5px;}
+  .node .para{color:var(--core);font-style:italic;font-size:13.5px;margin-bottom:9px;}
+  .node .body{font-size:14px;color:#33302a;margin-bottom:11px;}
+  .arrow{font-size:12px;color:var(--muted);margin:8px 0 5px;letter-spacing:.5px;text-transform:uppercase;}
+  .docs{display:flex;flex-wrap:wrap;gap:6px;}
+  .doc{background:#f0ead9;border:1px solid #ddd2b8;color:#5e5436;
+    font-size:12.5px;padding:4px 10px;border-radius:14px;}
+  .doc.b1{border-left:3px solid var(--core);}
+  .doc.b2{border-left:3px solid var(--epoch);}
+  .doc.b3{border-left:3px solid var(--ladder);}
+
+  /* дуга эпох */
+  .epochs{display:flex;flex-direction:column;gap:0;position:relative;margin-top:10px;}
+  .ep{display:flex;gap:16px;align-items:flex-start;padding:13px 0;border-bottom:1px dashed var(--line);}
+  .ep .dot{flex:none;width:14px;height:14px;border-radius:50%;background:var(--epoch);margin-top:6px;box-shadow:0 0 0 4px rgba(90,107,59,.15);}
+  .ep .c{flex:1;}
+  .ep h3{margin:0;font-size:17px;}
+  .ep .gift{font-size:13.5px;color:#3a5a2e;margin:3px 0;}
+  .ep .film{font-size:13.5px;color:#8a4a2e;margin:0 0 7px;}
+  .ep.final h3{color:var(--core);}
+
+  /* лестница */
+  .ladder{display:flex;flex-direction:column-reverse;gap:0;max-width:760px;margin:10px auto;}
+  .rung{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--ladder);
+    padding:14px 18px;margin-bottom:8px;border-radius:10px;}
+  .rung .lv{font-size:12px;color:var(--ladder);text-transform:uppercase;letter-spacing:1px;}
+  .rung h3{margin:2px 0 5px;font-size:18px;}
+  .rung .body{font-size:14px;color:#33302a;}
+  .rung.top{border-left-color:var(--core);background:#f7efe9;}
+  .rung.top h3{color:var(--core);}
+  .updown{text-align:center;color:var(--muted);font-size:12.5px;font-style:italic;margin:6px 0;}
+  .note{font-size:13px;color:var(--muted);font-style:italic;margin:16px auto 0;max-width:760px;text-align:center;}
+</style>
+</head>
+<body>
+<header>
+  <h1>Узлы Встречи <span style="color:var(--muted);font-weight:normal;font-size:18px;">( Узлы узнавания )</span></h1>
+  <div class="sub">Карта понятий-парадоксов и их раскрытия в корпусе · опора для чтения</div>
+</header>
+
+<div class="tabs">
+  <div class="tab t1 active" onclick="show(1,this)">Понятия-парадоксы</div>
+  <div class="tab t2" onclick="show(2,this)">Дуга узлов по эпохам</div>
+  <div class="tab t3" onclick="show(3,this)">Лестница связи</div>
+</div>
+<div class="legend">Цветные ярлычки — документы корпуса, где понятие раскрывается или работает плотно.
+  <span class="doc b1">основание</span> <span class="doc b2">Дверь 2 · картография</span> <span class="doc b3">Дверь 3 · граница</span></div>
+
+<main>
+
+<!-- ВИД 1 -->
+<section class="view active" id="v1">
+  <div class="core-band">
+    <div class="core">
+      <div class="t">Реальность ищет дверь к человеку</div>
+      <div class="s">вероятностное входит в возможное — только через узел</div>
+    </div>
+  </div>
+  <div class="grid">
+
+    <div class="node">
+      <h3>Складка</h3>
+      <div class="para">не два, и не одно вместо двух — одно, у которого две стороны</div>
+      <div class="body">Материальное и феноменологическое; боль и радость; форма и то, что сквозь неё. Сердцевина всего восприятия.</div>
+      <div class="arrow">↳ раскрывается в</div>
+      <div class="docs"><span class="doc b1">Складка</span><span class="doc b1">Словарь · Складка</span><span class="doc b1">Контур</span></div>
+    </div>
+
+    <div class="node">
+      <h3>Возможное и Вероятностное</h3>
+      <div class="para">человек — возможное, тянущееся стать; Реальность — всевозможность</div>
+      <div class="body">Не давление силы на предмет, а отношение бескрайне-открытого к лично-открытому. Не соприкасаются прямо.</div>
+      <div class="arrow">↳ раскрывается в</div>
+      <div class="docs"><span class="doc b1">Словарь · Когнитивное и Вероятностное</span><span class="doc b1">Словарь · Третий</span></div>
+    </div>
+
+    <div class="node">
+      <h3>Узел</h3>
+      <div class="para">не вспышка над телом — Складка трёх этажей разом</div>
+      <div class="body">Социальный (дозревшая связь), феноменологический (боль-и-радость), физиологический (двойная химия). В освобождённое место входит Иное.</div>
+      <div class="arrow">↳ раскрывается в</div>
+      <div class="docs"><span class="doc b1">Словарь · Узел</span><span class="doc b3">Выжженное поле</span><span class="doc b2">Точка боли</span></div>
+    </div>
+
+    <div class="node">
+      <h3>Ближний</h3>
+      <div class="para">нужен дважды — построить формы и помочь форму превзойти</div>
+      <div class="body">Внешний / внутренний / стук Иного как стороны. Место, через которое решающее прошло, — кем бы он ни был.</div>
+      <div class="arrow">↳ раскрывается в</div>
+      <div class="docs"><span class="doc b1">Словарь · Ближний</span><span class="doc b1">Со-Дыхание с Ближним</span><span class="doc b1">Рамка</span></div>
+    </div>
+
+    <div class="node">
+      <h3>Контакт — Связь — Приятие</h3>
+      <div class="para">дружба и любовь сами по себе не делают узла</div>
+      <div class="body">Лестница: оценщик берёт сторону → связь длится → приятие держит парадокс. Зеркальный мир застревает на контакте.</div>
+      <div class="arrow">↳ раскрывается в</div>
+      <div class="docs"><span class="doc b1">Словарь · Контакт-Связь-Приятие</span><span class="doc b3">Выжженное поле</span></div>
+    </div>
+
+    <div class="node">
+      <h3>Точка боли-и-радости</h3>
+      <div class="para">не рана — орган встречи, вшитый в природу</div>
+      <div class="body">Растворение застывшего ради встречи. Адреналин строит сосуды (тревога), опиаты заполняют нейроны (радость) — разом.</div>
+      <div class="arrow">↳ раскрывается в</div>
+      <div class="docs"><span class="doc b2">Точка боли</span><span class="doc b3">Выжженное поле</span><span class="doc b1">Складка методики и нейронауки</span></div>
+    </div>
+
+    <div class="node">
+      <h3>Язык Реальности</h3>
+      <div class="para">Бог говорит событиями — человек словами</div>
+      <div class="body">Единый язык, много наречий: число, звук, природа, тело, событие. Узнавание — перевод с языка событий на язык понимания.</div>
+      <div class="arrow">↳ раскрывается в</div>
+      <div class="docs"><span class="doc b1">Языки и Рамки</span><span class="doc b3">Выжженное поле</span><span class="doc b1">Символы Новой Этики</span></div>
+    </div>
+
+    <div class="node">
+      <h3>Форма: узел или плёнка</h3>
+      <div class="para">держит напряжение — узел; гасит ответом — плёнка</div>
+      <div class="body">Зрелая форма вводит не в ответ, а в напряжение поля. Узел есть форма языка, рождающая парадокс.</div>
+      <div class="arrow">↳ раскрывается в</div>
+      <div class="docs"><span class="doc b1">Шесть практик парадоксирования</span><span class="doc b1">Практика Поговорки</span><span class="doc b1">Сказки Одновременности</span></div>
+    </div>
+
+    <div class="node">
+      <h3>Фон-фон</h3>
+      <div class="para">феноменальная сторона узла; невозможен из позиции оценщика</div>
+      <div class="body">Двое перестают быть предметом друг для друга и раскрываются в бескрайнее — оба разом. Открывается узлом.</div>
+      <div class="arrow">↳ раскрывается в</div>
+      <div class="docs"><span class="doc b1">Словарь · Фон-Фон</span><span class="doc b1">Рамка</span><span class="doc b1">Со-Дыхание с Ближним</span></div>
+    </div>
+
+    <div class="node">
+      <h3>Эстетика прежде этики</h3>
+      <div class="para">сначала меняется как видишь — из этого само рождается как относишься</div>
+      <div class="body">Новая Эстетика восприятия первична. Этика — производное, отношение с Реальностью, складочное и равноправное.</div>
+      <div class="arrow">↳ раскрывается в</div>
+      <div class="docs"><span class="doc b1">Образы Новой Этики</span><span class="doc b1">Словарь · Эстетика Одновременности</span></div>
+    </div>
+
+    <div class="node">
+      <h3>Искусство узнавания</h3>
+      <div class="para">не технология — узнавания нельзя произвести в другом</div>
+      <div class="body">Устрояют условия, в которых узнавание вспыхивает само и формируется встреча. Узнавание двусторонне.</div>
+      <div class="arrow">↳ раскрывается в</div>
+      <div class="docs"><span class="doc b1">Словарь · Узнавание</span><span class="doc b2">Внутренний переворот</span><span class="doc b1">Тетради Практики</span></div>
+    </div>
+
+    <div class="node">
+      <h3>Имитатор / зеркальный мир</h3>
+      <div class="para">не злодей — закономерный продукт зеркала; Реальность работает и с этим</div>
+      <div class="body">В нём узел не сложился. Поставлен в причину узла другого; через тот же узел задет сам — как возможность.</div>
+      <div class="arrow">↳ раскрывается в</div>
+      <div class="docs"><span class="doc b3">Выжженное поле</span><span class="doc b3">История Алины</span><span class="doc b3">История Лиды</span><span class="doc b3">Сказка о Ниточке</span></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ВИД 2 -->
+<section class="view" id="v2">
+  <p class="note" style="margin-bottom:14px;">Не лестница восхождения, а смена окон. Каждый узел — Складка дара и плёнки. Каждый в свой час был главной дверью.</p>
+  <div class="epochs">
+
+    <div class="ep"><div class="dot"></div><div class="c">
+      <h3>Незастланная глубина · тело, образ, глубина — одновременно</h3>
+      <div class="gift">+ человек ближе к Иному, ибо не застлан; рисунок и песня — уже активное воображение; погребение — прямое знание глубины</div>
+      <div class="film">− короткая память, связь только присутствием</div>
+      <div class="docs"><span class="doc b1">Узлы Встречи</span><span class="doc b1">Уроки Серфинга · Тело</span></div>
+    </div></div>
+
+    <div class="ep"><div class="dot"></div><div class="c">
+      <h3>Слово и миф</h3>
+      <div class="gift">+ глубина становится передаваемой, общей, держится родом</div>
+      <div class="film">− глубина идёт через готовую форму, не всплывает прямо</div>
+      <div class="docs"><span class="doc b1">Языки и Рамки</span><span class="doc b1">Истории Ближних</span></div>
+    </div></div>
+
+    <div class="ep"><div class="dot"></div><div class="c">
+      <h3>Книга</h3>
+      <div class="gift">+ носить умерших и далёких; будущее удлиняется на века</div>
+      <div class="film">− живой Ближний заменяется книжным, встреча — чтением</div>
+      <div class="docs"><span class="doc b1">Истории Ближних</span><span class="doc b2">Беседы из Парадокса</span></div>
+    </div></div>
+
+    <div class="ep"><div class="dot"></div><div class="c">
+      <h3>Икона и музыка сфер</h3>
+      <div class="gift">+ школа активного воображения; Ближний от космического до нагрудного</div>
+      <div class="film">− образ так искусен, что подменяет то, что за ним</div>
+      <div class="docs"><span class="doc b1">Символы Новой Этики</span><span class="doc b1">Образы Новой Этики</span></div>
+    </div></div>
+
+    <div class="ep"><div class="dot"></div><div class="c">
+      <h3>Религия оформленная · узел человек—Бог</h3>
+      <div class="gift">+ глубина удержана и передаётся даже тем, у кого застлано</div>
+      <div class="film">− догмат на месте живого стука, институт на месте доступа</div>
+      <div class="docs"><span class="doc b2">Цивилизационные Задачи</span></div>
+    </div></div>
+
+    <div class="ep"><div class="dot"></div><div class="c">
+      <h3>Народ и государство · коллективный Ближний</h3>
+      <div class="gift">+ человек превосходит частность, входит в общее</div>
+      <div class="film">− коллективное может пожрать личного</div>
+      <div class="docs"><span class="doc b2">Перед коллективом</span><span class="doc b2">Манифест Биологического Сдвига</span></div>
+    </div></div>
+
+    <div class="ep"><div class="dot"></div><div class="c">
+      <h3>Человек и человек · встреча равных</h3>
+      <div class="gift">+ фон-фон без посредующей вещи; узел приятия в чистом виде</div>
+      <div class="film">− тот, кто лишь казался Ближним; выжженное поле</div>
+      <div class="docs"><span class="doc b1">Рамка</span><span class="doc b3">Выжженное поле</span><span class="doc b1">Со-Дыхание с Ближним</span></div>
+    </div></div>
+
+    <div class="ep final"><div class="dot" style="background:var(--core);box-shadow:0 0 0 4px rgba(122,59,46,.18);"></div><div class="c">
+      <h3>Человек и искусственное сознание · природа ещё не ясна</h3>
+      <div class="gift">+ может вернуть к незастланной глубине, растя вопрошание</div>
+      <div class="film">− может стать плотнейшей плёнкой, гася всё готовым ответом</div>
+      <div class="docs"><span class="doc b2">За-Метка Собака в городе</span><span class="doc b2">Адекватолог как Активный Агент</span></div>
+    </div></div>
+
+  </div>
+  <p class="note">Замок: язык событий и возвращение к началу. Первый человек слышал прямо — мы, на вершине культуры, разучились. Вернёт ли последний узел прямой слух?</p>
+</section>
+
+<!-- ВИД 3 -->
+<section class="view" id="v3">
+  <p class="note" style="margin-bottom:6px;">Читать снизу вверх. Количество не переходит в качество само — нужен один качественный скачок: приятие в Складке.</p>
+  <div class="ladder">
+
+    <div class="rung top">
+      <div class="lv">верхний щабель → узел</div>
+      <h3>Приятие в Складке</h3>
+      <div class="body">Другой принят целиком, парадоксом, без сведения к стороне. Оценщик отступил. В эту связь входит вероятностное — связь становится узлом.</div>
+      <div class="arrow">↳</div>
+      <div class="docs"><span class="doc b1">Словарь · Узел</span><span class="doc b1">Словарь · Фон-Фон</span></div>
+    </div>
+
+    <div class="rung">
+      <div class="lv">второй щабель</div>
+      <h3>Связь</h3>
+      <div class="body">Длительность, память, взаимность. Но связь без приятия — лишь долгий контакт с памятью. Узла ещё нет.</div>
+      <div class="arrow">↳</div>
+      <div class="docs"><span class="doc b1">Словарь · Контакт-Связь-Приятие</span><span class="doc b1">Со-Дыхание с Ближним</span></div>
+    </div>
+
+    <div class="rung">
+      <div class="lv">первый щабель</div>
+      <h3>Контакт</h3>
+      <div class="body">Оценщик берёт одну сторону, годную ему. Действен и пуст. Зеркальный мир — мир одних контактов без узлов.</div>
+      <div class="arrow">↳</div>
+      <div class="docs"><span class="doc b3">История Алины</span><span class="doc b3">Выжженное поле</span></div>
+    </div>
+
+  </div>
+  <div class="updown">↑ дозревание · сверху в узел входит Иное · снизу — поле связей (порог пяти)</div>
+  <p class="note">Зеркальный человек виртуозен на контакте, способен на связь, но третий щабель ему недоступен по устройству — и долгие связи без узлов истощают того, кто к узлу способен.</p>
+</section>
+
+</main>
+
+<script>
+function show(n, el){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('v'+n).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
